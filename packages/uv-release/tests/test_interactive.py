@@ -86,9 +86,7 @@ class TestMergeUpgradeCommand:
         assert "up to date" in capsys.readouterr().out
 
     def test_clean_merge(self, tmp_path: Path) -> None:
-        target, base_path = self._setup(
-            tmp_path, "line1\nline2\n", "line1\nline2\n"
-        )
+        target, base_path = self._setup(tmp_path, "line1\nline2\n", "line1\nline2\n")
         cmd = MergeUpgradeCommand(
             label="Merge",
             file_path=str(target),
@@ -105,9 +103,7 @@ class TestMergeUpgradeCommand:
     def test_conflict_without_editor(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        target, base_path = self._setup(
-            tmp_path, "line1\noriginal\n", "line1\nmine\n"
-        )
+        target, base_path = self._setup(tmp_path, "line1\noriginal\n", "line1\nmine\n")
         cmd = MergeUpgradeCommand(
             label="Merge",
             file_path=str(target),
@@ -119,9 +115,7 @@ class TestMergeUpgradeCommand:
         assert "conflicts" in capsys.readouterr().out
 
     def test_conflict_with_editor_resolved(self, tmp_path: Path) -> None:
-        target, base_path = self._setup(
-            tmp_path, "line1\noriginal\n", "line1\nmine\n"
-        )
+        target, base_path = self._setup(tmp_path, "line1\noriginal\n", "line1\nmine\n")
         cmd = MergeUpgradeCommand(
             label="Merge",
             file_path=str(target),
@@ -173,9 +167,7 @@ class TestMergeUpgradeCommand:
     def test_conflict_with_editor_declined(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        target, base_path = self._setup(
-            tmp_path, "line1\noriginal\n", "line1\nmine\n"
-        )
+        target, base_path = self._setup(tmp_path, "line1\noriginal\n", "line1\nmine\n")
         cmd = MergeUpgradeCommand(
             label="Merge",
             file_path=str(target),
