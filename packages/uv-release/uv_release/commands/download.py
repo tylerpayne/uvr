@@ -18,23 +18,26 @@ class DownloadWheelsCommand(Command):
     pattern: str
     output_dir: str = "dist"
     all_platforms: bool = False
+    # owner/name. Empty falls back to gh's default (set via `gh repo set-default`).
+    repo: str = ""
 
     def execute(self) -> int:
         if self.label:
             print(f"  {self.label}")
-        result = subprocess.run(
-            [
-                "gh",
-                "release",
-                "download",
-                self.tag_name,
-                "--pattern",
-                self.pattern,
-                "--dir",
-                self.output_dir,
-                "--clobber",
-            ]
-        )
+        args = [
+            "gh",
+            "release",
+            "download",
+            self.tag_name,
+            "--pattern",
+            self.pattern,
+            "--dir",
+            self.output_dir,
+            "--clobber",
+        ]
+        if self.repo:
+            args += ["--repo", self.repo]
+        result = subprocess.run(args)
         if result.returncode != 0:
             return result.returncode
         if not self.all_platforms:
@@ -67,6 +70,8 @@ class DownloadRunArtifactsCommand(Command):
 
     type: Literal["download_run_artifacts"] = "download_run_artifacts"
     output_dir: str = "dist"
+    # owner/name. Empty falls back to gh's default (set via `gh repo set-default`).
+    repo: str = ""
 
     def execute(self) -> int:
         if self.label:
@@ -75,18 +80,19 @@ class DownloadRunArtifactsCommand(Command):
         if not run_id:
             print("    RUN_ID not set, skipping artifact download")
             return 0
-        result = subprocess.run(
-            [
-                "gh",
-                "run",
-                "download",
-                run_id,
-                "--dir",
-                self.output_dir,
-                "--pattern",
-                "wheels-*",
-            ]
-        )
+        args = [
+            "gh",
+            "run",
+            "download",
+            run_id,
+            "--dir",
+            self.output_dir,
+            "--pattern",
+            "wheels-*",
+        ]
+        if self.repo:
+            args += ["--repo", self.repo]
+        result = subprocess.run(args)
         if result.returncode != 0:
             return result.returncode
         # gh run download creates subdirs per artifact name. Flatten into output_dir.

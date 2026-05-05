@@ -13,6 +13,7 @@ from .package_dependencies import PackageDependencies
 from ..config.uvr_runners import UvrRunners
 from ..params.reuse_run import ReuseRun
 from ..params.skip_jobs import SkipJobs
+from ..shared.github_repo import GitHubRepo
 
 
 @singleton
@@ -28,6 +29,7 @@ def provide_build_job(
     uvr_runners: UvrRunners,
     reuse_run: ReuseRun,
     skip_jobs: SkipJobs,
+    github_repo: GitHubRepo,
 ) -> BuildJob:
     # Empty job if nothing to build, skipped by user, or reusing prior run.
     if not build_packages.items or "build" in skip_jobs.value or reuse_run.value:
@@ -46,6 +48,7 @@ def provide_build_job(
                 tag_name=dep.tag_name,
                 pattern="*.whl",
                 output_dir="deps",
+                repo=github_repo.name,
             )
         )
 

@@ -12,6 +12,7 @@ from ...commands import (
 from ...types.job import Job
 from ...types.tag import Tag
 from ..params.release_target import ReleaseTarget
+from ..shared.github_repo import GitHubRepo
 from .publish_packages import PublishPackages
 from .release_versions import ReleaseVersions
 from ..config.uvr_publishing import UvrPublishing
@@ -28,6 +29,7 @@ def provide_publish_job(
     release_versions: ReleaseVersions,
     uvr_publishing: UvrPublishing,
     release_target: ReleaseTarget,
+    github_repo: GitHubRepo,
 ) -> PublishJob:
     if not publish_packages.items:
         return PublishJob(name="publish")
@@ -51,6 +53,7 @@ def provide_publish_job(
                     tag_name=tag_name,
                     pattern="*.whl",
                     output_dir="dist",
+                    repo=github_repo.name,
                 )
             )
 
