@@ -266,6 +266,17 @@ class TestBumpJobStructure:
         assert any("pkg-b" in n for n in names)
         assert any("pkg-c" in n for n in names)
 
+    def test_bump_uses_actual_package_path(self, released_workspace: Path) -> None:
+        """Bump commands must use the real workspace path, not packages/{name}."""
+        with diny.provide():
+            plan = get_plan_json("--dev")
+        versions = _commands_of_type(plan, "bump", "set_version")
+        for cmd in versions:
+            # Every package_path must point to a directory that exists.
+            assert (released_workspace / cmd["package_path"]).exists(), (
+                f"package_path {cmd['package_path']!r} does not exist"
+            )
+
     def test_creates_baseline_tags(self, released_workspace: Path) -> None:
         with diny.provide():
             plan = get_plan_json("--dev")

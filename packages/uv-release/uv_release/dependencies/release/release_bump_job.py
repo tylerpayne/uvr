@@ -19,6 +19,7 @@ from ...types.job import Job
 from ..params.no_commit import NoCommit
 from ..params.no_push import NoPush
 from ..params.release_target import ReleaseTarget
+from ..shared.workspace_packages import WorkspacePackages
 from ...types.tag import Tag
 
 
@@ -31,6 +32,7 @@ class ReleaseBumpJob(Job):
 def provide_release_bump_job(
     bump_versions: ReleaseBumpVersions,
     dependency_pins: ReleaseDependencyPins,
+    workspace_packages: WorkspacePackages,
     release_target: ReleaseTarget,
     no_commit: NoCommit,
     no_push: NoPush,
@@ -54,10 +56,11 @@ def provide_release_bump_job(
         commands.append(ConfigureGitIdentityCommand(label="Configure git identity"))
 
     for name, next_version in bump_versions.items.items():
+        pkg = workspace_packages.items[name]
         commands.append(
             SetVersionCommand(
                 label=f"Bump {name} to {next_version.raw}",
-                package_path=f"packages/{name}",
+                package_path=pkg.path,
                 version=next_version.raw,
             )
         )
