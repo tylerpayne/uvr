@@ -12,7 +12,7 @@ from pathlib import Path
 import diny
 import pytest
 
-from conftest import run_cli, read_toml
+from conftest import run_cli
 
 
 def _mock_one_command(
@@ -86,18 +86,21 @@ class TestBuildFailures:
 
 
 class TestBumpFailures:
-    def test_sync_lockfile_failure_continues(
+    def test_lock_failure_aborts(
         self,
         workspace: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        """SyncLockfileCommand has check=False. Failure should not abort."""
-        _mock_one_command(monkeypatch, "uv", "sync")
-        with diny.provide():
-            run_cli("version", "--bump", "minor", "--no-commit", "--no-push")
-        # Should complete. Version should be bumped despite sync failure.
-        ver = read_toml(workspace / "packages" / "pkg-a" / "pyproject.toml")
-        assert ver["project"]["version"] == "0.2.0.dev0"
+        """SyncLockfileCommand has check=True. Failure should abort.
+
+        We need uv.lock regeneration to succeed before committing, otherwise
+        the bump commit ships pyproject.toml updates without the matching
+        lockfile and downstream installs are inconsistent.
+        """
+        _mock_one_command(monkeypatch, "uv", "lock")
+        with pytest.raises(SystemExit):
+            with diny.provide():
+                run_cli("version", "--bump", "minor", "--no-commit", "--no-push")
 
     def test_git_commit_failure_aborts(
         self,

@@ -22,7 +22,10 @@ class ShellCommand(Command):
 
 
 class CreateTagCommand(Command):
-    """Create a git tag. Skips if the tag already exists."""
+    """Create an annotated git tag. Skips if the tag already exists.
+
+    Annotated (not lightweight) so ``git push --follow-tags`` will push it.
+    """
 
     type: Literal["create_tag"] = "create_tag"
     tag_name: str
@@ -39,5 +42,7 @@ class CreateTagCommand(Command):
             return 0
         if self.label:
             print(f"  {self.label}")
-        result = subprocess.run(["git", "tag", self.tag_name])
+        result = subprocess.run(
+            ["git", "tag", "-a", "-m", self.tag_name, self.tag_name]
+        )
         return result.returncode

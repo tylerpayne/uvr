@@ -57,21 +57,31 @@ class CommitCommand(Command):
 
 
 class PushCommand(Command):
-    """git push, optionally preceded by pull --rebase."""
+    """git push."""
 
     type: Literal["push"] = "push"
     follow_tags: bool = True
-    pull_rebase: bool = False
 
     def execute(self) -> int:
         if self.label:
             print(f"  {self.label}")
-        if self.pull_rebase:
-            result = subprocess.run(["git", "pull", "--rebase"])
-            if result.returncode != 0:
-                return result.returncode
         args = ["git", "push"]
         if self.follow_tags:
             args.append("--follow-tags")
         result = subprocess.run(args)
+        return result.returncode
+
+
+class PullRebaseCommand(Command):
+    """git pull --rebase. Used at the start of post-release bump to sync with
+    any concurrent commits before tagging baselines, since tagging after a
+    rebase would orphan the tag refs.
+    """
+
+    type: Literal["pull_rebase"] = "pull_rebase"
+
+    def execute(self) -> int:
+        if self.label:
+            print(f"  {self.label}")
+        result = subprocess.run(["git", "pull", "--rebase"])
         return result.returncode
