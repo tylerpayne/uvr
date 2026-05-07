@@ -10,6 +10,7 @@ from ...commands import (
     ConfigureGitIdentityCommand,
     CreateTagCommand,
     PinDepsCommand,
+    PullRebaseCommand,
     PushCommand,
     SetVersionCommand,
     SyncLockfileCommand,
@@ -44,6 +45,7 @@ def provide_release_bump_job(
 
     commands: list[
         ConfigureGitIdentityCommand
+        | PullRebaseCommand
         | SetVersionCommand
         | PinDepsCommand
         | SyncLockfileCommand
@@ -54,6 +56,12 @@ def provide_release_bump_job(
 
     if not is_local:
         commands.append(ConfigureGitIdentityCommand(label="Configure git identity"))
+        # Pull --rebase BEFORE making bump commits and creating baseline tags.
+        # If we rebased after tagging, the tags would point at orphaned commits
+        # and `git push --follow-tags` would not push them. The release_job
+        # already pushed the release commits and tags, so this rebases against
+        # whatever state landed concurrently (usually a no-op).
+        commands.append(PullRebaseCommand(label="Pull before bump"))
 
     for name, next_version in bump_versions.items.items():
         pkg = workspace_packages.items[name]
@@ -98,8 +106,6 @@ def provide_release_bump_job(
             )
 
         if not skip_push:
-            commands.append(
-                PushCommand(label="Push", follow_tags=True, pull_rebase=True)
-            )
+            commands.append(PushCommand(label="Push", follow_tags=True))
 
     return ReleaseBumpJob(name="bump", commands=commands)  # type: ignore[arg-type]

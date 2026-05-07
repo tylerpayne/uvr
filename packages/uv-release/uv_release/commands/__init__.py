@@ -10,7 +10,12 @@ from .dispatch import DispatchWorkflowCommand
 from .download import DownloadRunArtifactsCommand, DownloadWheelsCommand
 from .fetch import FetchSkillBasesCommand, FetchWorkflowBaseCommand
 from .file import MakeDirectoryCommand, RemoveDirectoryCommand, WriteFileCommand
-from .git import CommitCommand, ConfigureGitIdentityCommand, PushCommand
+from .git import (
+    CommitCommand,
+    ConfigureGitIdentityCommand,
+    PullRebaseCommand,
+    PushCommand,
+)
 from .group import CommandGroup
 from .install import InstallWheelsCommand
 from .merge import MergeUpgradeCommand
@@ -43,6 +48,7 @@ AnyCommand = Annotated[
     | InstallWheelsCommand
     | ConfigureGitIdentityCommand
     | CommitCommand
+    | PullRebaseCommand
     | PushCommand
     | SyncLockfileCommand
     | DispatchWorkflowCommand
@@ -69,6 +75,7 @@ __all__ = [
     "MergeUpgradeCommand",
     "PinDepsCommand",
     "PublishToIndexCommand",
+    "PullRebaseCommand",
     "PushCommand",
     "RemoveDirectoryCommand",
     "SetVersionCommand",

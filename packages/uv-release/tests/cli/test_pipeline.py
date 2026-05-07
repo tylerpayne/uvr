@@ -510,11 +510,12 @@ class TestLocalRelease:
         def _patched(args: str | list[str], **kwargs):  # type: ignore[no-untyped-def]
             if not isinstance(args, list):
                 return _real(args, **kwargs)
-            # Mock git tag (skip -l checks, only track creates)
+            # Mock git tag (skip -l checks, only track creates).
+            # Annotated tag form: ["git", "tag", "-a", "-m", <name>, <name>].
             if len(args) >= 3 and args[0] == "git" and args[1] == "tag":
                 if args[2] == "-l":
                     return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
-                created_tags.append(args[2])
+                created_tags.append(args[-1])
                 return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
             # Mock git push, pull, config, status
             if (

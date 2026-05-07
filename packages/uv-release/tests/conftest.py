@@ -120,7 +120,13 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         tomlkit.dumps(
             {
                 "tool": {
-                    "uv": {"workspace": {"members": ["packages/*"]}},
+                    "uv": {
+                        "workspace": {"members": ["packages/*"]},
+                        "sources": {
+                            "pkg-a": {"workspace": True},
+                            "pkg-b": {"workspace": True},
+                        },
+                    },
                     "uvr": {
                         "config": {"latest": "pkg-a", "python_version": "3.12"},
                     },
@@ -136,6 +142,7 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     git(root, "init")
     git(root, "config", "user.name", "test")
     git(root, "config", "user.email", "test@test")
+    subprocess.run(["uv", "lock"], cwd=root, check=True, capture_output=True)
     git(root, "add", ".")
     git(root, "commit", "-m", "init")
 
@@ -165,7 +172,14 @@ def released_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         tomlkit.dumps(
             {
                 "tool": {
-                    "uv": {"workspace": {"members": ["packages/*"]}},
+                    "uv": {
+                        "workspace": {"members": ["packages/*"]},
+                        "sources": {
+                            "pkg-a": {"workspace": True},
+                            "pkg-b": {"workspace": True},
+                            "pkg-c": {"workspace": True},
+                        },
+                    },
                     "uvr": {
                         "config": {"latest": "pkg-c", "python_version": "3.12"},
                         "publish": {"index": "pypi", "environment": "release"},
@@ -183,6 +197,7 @@ def released_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     git(root, "init")
     git(root, "config", "user.name", "test")
     git(root, "config", "user.email", "test@test")
+    subprocess.run(["uv", "lock"], cwd=root, check=True, capture_output=True)
     git(root, "add", ".")
     git(root, "commit", "-m", "init")
 
@@ -215,7 +230,15 @@ def build_requires_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         tomlkit.dumps(
             {
                 "tool": {
-                    "uv": {"workspace": {"members": ["packages/*"]}},
+                    "uv": {
+                        "workspace": {"members": ["packages/*"]},
+                        "sources": {
+                            "pkg-a": {"workspace": True},
+                            "pkg-b": {"workspace": True},
+                            "pkg-c": {"workspace": True},
+                            "pkg-d": {"workspace": True},
+                        },
+                    },
                     "uvr": {
                         "config": {"latest": "pkg-c", "python_version": "3.12"},
                         "publish": {"index": "pypi", "environment": "release"},
@@ -241,6 +264,7 @@ def build_requires_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     git(root, "init")
     git(root, "config", "user.name", "test")
     git(root, "config", "user.email", "test@test")
+    subprocess.run(["uv", "lock"], cwd=root, check=True, capture_output=True)
     git(root, "add", ".")
     git(root, "commit", "-m", "init")
 
