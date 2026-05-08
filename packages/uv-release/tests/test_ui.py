@@ -102,8 +102,8 @@ class TestPipeline:
             ]
         )
         out = capsys.readouterr().out
-        # Both arrows should sit in the same column.
-        arrow_lines = [ln for ln in out.splitlines() if "→" in ln]
+        # Both ASCII `->` arrows should sit in the same column.
+        arrow_lines = [ln for ln in out.splitlines() if "->" in ln]
         assert len(arrow_lines) == 2
-        positions = [ln.index("→") for ln in arrow_lines]
+        positions = [ln.index("->") for ln in arrow_lines]
         assert len(set(positions)) == 1, f"arrows misaligned: {positions}"

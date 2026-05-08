@@ -1,7 +1,7 @@
 """Pipeline: two-level indented step list with magenta arrow routes.
 
-Used any time something flows from A to B (package → registry, version →
-version, baseline → head). Step name in cyan, route source/destination
+Used any time something flows from A to B (package -> registry, version ->
+version, baseline -> head). Step name in cyan, route source/destination
 separated by a magenta arrow.
 """
 
@@ -39,6 +39,11 @@ def pipeline(steps: Iterable[Step]) -> None:
         default=0,
     )
     for s in steps:
+        # Step name is a ref (`uvr-build`, `uvr-publish`) — cyan.
         console.print(f"  run   [uvr.value]{s.name}[/]")
         for r in s.routes:
-            console.print(f"        {r.src:<{src_width}} [uvr.accent]→[/] {r.dst}")
+            # Route source is also a ref (package name); arrow is dim
+            # chrome (ASCII `->`, never the unicode arrow).
+            console.print(
+                f"        [uvr.value]{r.src:<{src_width}}[/] [uvr.dim]->[/] {r.dst}"
+            )

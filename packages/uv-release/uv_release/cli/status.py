@@ -42,11 +42,16 @@ def cmd_status(
         # users can still tell *why* a package changed.
         if reason is None:
             status_cell = ui.badge_markup("unchanged")
-            name_cell = name
+            name_cell = f"[uvr.value]{name}[/]"
         else:
             status_cell = ui.badge_markup("changed")
-            name_cell = f"[uvr.accent]{name}[/] ({reason})"
-        rows.append([status_cell, name_cell, pkg.version.raw, diff_from])
+            name_cell = f"[uvr.value]{name}[/] ({reason})"
+        # Versions and tag refs are both identifiers ("things the system
+        # tracks") — cyan per the color language. The `(initial)` placeholder
+        # is plain text since it isn't a real ref.
+        version_cell = f"[uvr.value]{pkg.version.raw}[/]"
+        diff_cell = f"[uvr.value]{baseline.raw}[/]" if baseline else diff_from
+        rows.append([status_cell, name_cell, version_cell, diff_cell])
     ui.print_table(["status", "package", "version", "diff from"], rows)
 
     if not changed_packages.reasons:

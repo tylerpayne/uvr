@@ -62,25 +62,25 @@ def _demo_table() -> None:
         [
             [
                 ui.badge_markup("changed"),
-                "[uvr.accent]my-core[/]",
-                "0.1.0 → [b]0.2.0[/]",
+                "[uvr.value]my-core[/]",
+                "0.1.0 -> [b]0.2.0[/]",
                 "0.1.0",
             ],
             [
                 ui.badge_markup("changed"),
-                "[uvr.accent]my-auth[/]",
-                "0.1.0 → [b]0.1.1[/]",
+                "[uvr.value]my-auth[/]",
+                "0.1.0 -> [b]0.1.1[/]",
                 "0.1.0",
             ],
             [
                 ui.badge_markup("unchanged"),
-                "[uvr.dim]my-api[/]",
+                "[uvr.value]my-api[/]",
                 "0.4.2",
                 "0.4.2",
             ],
             [
                 ui.badge_markup("unchanged"),
-                "[uvr.dim]my-cli[/]",
+                "[uvr.value]my-cli[/]",
                 "1.0.0",
                 "1.0.0",
             ],
@@ -92,9 +92,9 @@ def _demo_table() -> None:
 def _demo_badges() -> None:
     ui.section("StatusBadge")
     pairs = [
-        ("changed", "[uvr.accent]my-core[/]"),
-        ("unchanged", "[uvr.dim]my-api[/]"),
-        ("stale", "[uvr.accent]my-auth/pyproject.toml[/]"),
+        ("changed", "[uvr.value]my-core[/]"),
+        ("unchanged", "[uvr.value]my-api[/]"),
+        ("stale", "[uvr.value]my-auth/pyproject.toml[/]"),
         ("clean", "branch [uvr.value]main[/]"),
         ("created", ".uvr.toml"),
         ("updated", "my-auth/pyproject.toml"),
@@ -129,7 +129,7 @@ def _demo_kv() -> None:
         {
             "baseline": "[uvr.value]v0.4.1[/]",
             "strategy": "conventional",
-            "branch": "[uvr.value]main[/] · 3 ahead of [uvr.value]origin/main[/]",
+            "branch": "[uvr.value]main[/] / 3 ahead of [uvr.value]origin/main[/]",
             "tagged": "2d ago",
             "packages": "4 ([b]2 changed[/])",
         }
@@ -148,7 +148,7 @@ def _demo_hint() -> None:
 def _demo_error() -> None:
     ui.section("ErrorBlock")
     ui.error(
-        "stale pin in [uvr.accent]my-auth/pyproject.toml[/]",
+        "stale pin in [uvr.value]my-auth/pyproject.toml[/]",
         detail={
             "expected": "my-core ^0.2",
             "got": "my-core ^0.1",
@@ -165,9 +165,9 @@ def _demo_spinner() -> None:
     ui.section("Spinner")
     with ui.spinner("Fetching baseline tags", "git ls-remote origin") as s:
         time.sleep(0.6)
-        s.update("Resolving from PyPI     [uvr.dim]my-core, my-auth[/]")
+        s.update("Resolving from PyPI     my-core, my-auth")
         time.sleep(0.6)
-        s.update("Pushing tags to origin  [uvr.dim]2 tags[/]")
+        s.update("Pushing tags to origin  2 tags")
         time.sleep(0.6)
     ui.spinner_done("Fetched baseline tags", elapsed_ms=214)
     ui.console.print()
@@ -198,25 +198,25 @@ def _demo_full_flow() -> None:
         [
             [
                 ui.badge_markup("changed"),
-                "[uvr.accent]my-core[/]",
-                "0.1.0 → [b]0.2.0[/]",
+                "[uvr.value]my-core[/]",
+                "0.1.0 -> [b]0.2.0[/]",
                 "0.1.0",
             ],
             [
                 ui.badge_markup("changed"),
-                "[uvr.accent]my-auth[/]",
-                "0.1.0 → [b]0.1.1[/]",
+                "[uvr.value]my-auth[/]",
+                "0.1.0 -> [b]0.1.1[/]",
                 "0.1.0",
             ],
             [
                 ui.badge_markup("unchanged"),
-                "[uvr.dim]my-api[/]",
+                "[uvr.value]my-api[/]",
                 "0.4.2",
                 "0.4.2",
             ],
             [
                 ui.badge_markup("unchanged"),
-                "[uvr.dim]my-cli[/]",
+                "[uvr.value]my-cli[/]",
                 "1.0.0",
                 "1.0.0",
             ],
@@ -240,4 +240,4 @@ def _demo_full_flow() -> None:
     ui.console.print()
     # Demo only — don't actually block on stdin. `[y/N]` must be escaped so
     # Rich does not interpret it as a style tag.
-    ui.console.print(r"[bold]Dispatch release?[/] [uvr.cmd]\[y/N][/] [uvr.cmd]█[/]")
+    ui.console.print(r"[bold]Dispatch release?[/] [uvr.cmd]\[y/N][/] [uvr.cmd]_[/]")

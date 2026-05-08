@@ -10,4 +10,6 @@ from .console import console
 
 
 def banner(version: str, tagline: str = "Release management for uv workspaces") -> None:
-    console.print(f"[uvr.title]uvr[/] {version}  {tagline}")
+    # `uvr` is brand (bold magenta). The version is a ref/identifier (cyan).
+    # Dim `/` separator is chrome. ASCII glyphs only — no `·` or unicode.
+    console.print(f"[uvr.title]uvr[/] [uvr.value]{version}[/] [uvr.dim]/[/] {tagline}")

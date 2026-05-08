@@ -14,25 +14,39 @@ from rich.theme import Theme
 
 THEME = Theme(
     {
-        # Brand. The bold-magenta header is uvr's signature.
+        # Six semantic colors, one job each. See the design spec's "Color
+        # language" section: meaning before decoration. Default fg is the
+        # workhorse — color is the exception, applied only where it earns
+        # meaning. Pair color with a word so meaning survives NO_COLOR.
+        #
+        # Hero / brand — magenta marks "things the user types or follows":
+        # section titles, commands, progress fill, prompt cursor, spinner.
         "uvr.title": "bold bright_magenta",
         "uvr.accent": "bright_magenta",
-        # State badges. Word carries meaning even when color is stripped.
-        "uvr.changed": "bright_yellow",
-        "uvr.unchanged": "dim",
-        "uvr.stale": "red",
+        "uvr.cmd": "bright_magenta",
+        # Ok — completion / "this is good".
+        "uvr.ok": "green",
         "uvr.clean": "green",
         "uvr.created": "green",
         "uvr.updated": "green",
+        # Warn — "look here, nothing broken": review-me state.
+        "uvr.changed": "bright_yellow",
+        # Error — "something is wrong, act."
         "uvr.error": "red",
-        # Inline emphasis.
-        "uvr.cmd": "bright_magenta",
-        "uvr.path": "bright_magenta",
-        "uvr.value": "cyan",
-        "uvr.dim": "dim",
-        "uvr.ok": "green",
         "uvr.err": "bold red",
+        "uvr.stale": "red",
+        # Ref — names that point at stable things: tags, branches, package
+        # names being acted on, pipeline step names. Cyan for "noun the
+        # system tracks", distinct from magenta "verb the user runs".
+        "uvr.value": "cyan",
+        "uvr.path": "cyan",
+        # Dim — chrome only, never content. Hyphen rules, empty progress
+        # cells, the `/` banner separator, the `$` shell prompt, dim arrows.
+        "uvr.dim": "dim",
         "uvr.rule": "dim",
+        # Default fg — explicit non-style for clarity. `unchanged` badges
+        # carry meaning via the word, no color decoration needed.
+        "uvr.unchanged": "",
     }
 )
 

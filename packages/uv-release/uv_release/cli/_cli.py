@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 from typing import Any
@@ -65,48 +66,167 @@ class Params(Frozen):
 def parse_args() -> ParsedArgs:
     from ._help import UvrArgumentParser
 
-    parser = UvrArgumentParser(prog="uvr", description="Pure DI release pipeline.")
+    parser = UvrArgumentParser(prog="uvr")
     # All subparsers also use the ui-rendered help via parser_class.
     sub = parser.add_subparsers(dest="command", parser_class=UvrArgumentParser)
 
     # -- release --
     release_p = sub.add_parser("release", help="Plan and execute a release.")
-    release_p.add_argument("--where", choices=["ci", "local"], default="ci")
-    release_p.add_argument("--dry-run", action="store_true")
-    release_p.add_argument("--all-packages", action="store_true")
-    release_p.add_argument("--packages", nargs="*")
-    release_p.add_argument("--not-packages", nargs="*", default=[])
-    release_p.add_argument("--dev", action="store_true")
-    release_p.add_argument("-y", "--yes", action="store_true")
-    release_p.add_argument("--no-commit", action="store_true")
-    release_p.add_argument("--no-push", action="store_true")
-    release_p.add_argument("--reuse-run", default="")
-    release_p.add_argument("--reuse-releases", action="store_true")
-    release_p.add_argument("--runners", nargs="*", default=[])
-    release_p.add_argument("--skip", nargs="*", default=[])
-    release_p.add_argument("--skip-to", default="")
     release_p.add_argument(
-        "--release-notes", nargs=2, action="append", metavar=("PACKAGE", "NOTES")
+        "--where",
+        choices=["ci", "local"],
+        default="ci",
+        help="Where to run the pipeline (default: ci).",
     )
-    release_p.add_argument("--json", action="store_true", dest="json_output")
-    release_p.add_argument("--plan", default="", dest="plan_json")
+    release_p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show the plan and exit without dispatching.",
+    )
+    release_p.add_argument(
+        "--all-packages",
+        action="store_true",
+        help="Include every workspace package, not just changed ones.",
+    )
+    release_p.add_argument(
+        "--packages",
+        nargs="*",
+        help="Limit the release to these packages.",
+    )
+    release_p.add_argument(
+        "--not-packages",
+        nargs="*",
+        default=[],
+        help="Exclude these packages from the release.",
+    )
+    release_p.add_argument(
+        "--dev",
+        action="store_true",
+        help="Cut a dev release; keep the .devN suffix on versions.",
+    )
+    release_p.add_argument(
+        "-y",
+        "--yes",
+        action="store_true",
+        help="Skip the proceed prompt.",
+    )
+    release_p.add_argument(
+        "--no-commit",
+        action="store_true",
+        help="Don't commit local version changes.",
+    )
+    release_p.add_argument(
+        "--no-push",
+        action="store_true",
+        help="Don't push commits or tags.",
+    )
+    release_p.add_argument(
+        "--reuse-run",
+        default="",
+        help="Reuse artifacts from this GitHub Actions run id.",
+    )
+    release_p.add_argument(
+        "--reuse-releases",
+        action="store_true",
+        help="Reuse existing GitHub releases instead of recreating them.",
+    )
+    release_p.add_argument(
+        "--runners",
+        nargs="*",
+        default=[],
+        help="Filter the build matrix to runners with these labels.",
+    )
+    release_p.add_argument(
+        "--skip",
+        nargs="*",
+        default=[],
+        help="Skip these jobs by name.",
+    )
+    release_p.add_argument(
+        "--skip-to",
+        default="",
+        help="Skip every job before this one.",
+    )
+    release_p.add_argument(
+        "--release-notes",
+        nargs=2,
+        action="append",
+        metavar=("PACKAGE", "NOTES"),
+        help="Attach release notes to a package. NOTES may be @path/to/file.md.",
+    )
+    release_p.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Emit the plan as JSON to stdout and exit.",
+    )
+    # --plan is a CI-internal flag for executing a pre-serialized plan;
+    # users never set this directly. Hide from --help.
+    release_p.add_argument(
+        "--plan",
+        default="",
+        dest="plan_json",
+        help=argparse.SUPPRESS,
+    )
 
     # -- build --
     build_p = sub.add_parser("build", help="Build changed packages locally.")
-    build_p.add_argument("--all-packages", action="store_true")
-    build_p.add_argument("--packages", nargs="*")
+    build_p.add_argument(
+        "--all-packages",
+        action="store_true",
+        help="Build every workspace package, not just changed ones.",
+    )
+    build_p.add_argument(
+        "--packages",
+        nargs="*",
+        help="Limit the build to these packages.",
+    )
 
     # -- version --
     ver_p = sub.add_parser("version", help="Read, set, or bump package versions.")
-    ver_p.add_argument("--all-packages", action="store_true")
-    ver_p.add_argument("--packages", nargs="*")
-    ver_p.add_argument("--not-packages", nargs="*", default=[])
-    ver_p.add_argument("--no-commit", action="store_true")
-    ver_p.add_argument("--no-push", action="store_true")
-    ver_p.add_argument("--no-pin", action="store_true")
-    ver_p.add_argument("--force", action="store_true")
+    ver_p.add_argument(
+        "--all-packages",
+        action="store_true",
+        help="Apply to every workspace package.",
+    )
+    ver_p.add_argument(
+        "--packages",
+        nargs="*",
+        help="Limit to these packages.",
+    )
+    ver_p.add_argument(
+        "--not-packages",
+        nargs="*",
+        default=[],
+        help="Exclude these packages.",
+    )
+    ver_p.add_argument(
+        "--no-commit",
+        action="store_true",
+        help="Don't commit the version change.",
+    )
+    ver_p.add_argument(
+        "--no-push",
+        action="store_true",
+        help="Don't push the resulting commit.",
+    )
+    ver_p.add_argument(
+        "--no-pin",
+        action="store_true",
+        help="Don't pin internal workspace dependencies.",
+    )
+    ver_p.add_argument(
+        "--force",
+        action="store_true",
+        help="Bump even packages that haven't changed since baseline.",
+    )
     ver_mode = ver_p.add_mutually_exclusive_group()
-    ver_mode.add_argument("--set", default="", dest="version_set")
+    ver_mode.add_argument(
+        "--set",
+        default="",
+        dest="version_set",
+        help="Set every selected package to this exact version.",
+    )
     ver_mode.add_argument(
         "--bump",
         nargs="?",
@@ -114,6 +234,10 @@ def parse_args() -> ParsedArgs:
         choices=["auto", "dev", "patch", "minor", "major", "post", "stable"],
         default="",
         dest="bump_kind",
+        help=(
+            "Bump the version. Without an argument, bumps the smallest sensible "
+            "axis. `stable` strips pre-release/dev suffixes."
+        ),
     )
 
     # -- status --
@@ -124,80 +248,246 @@ def parse_args() -> ParsedArgs:
     cfg_sub = cfg_p.add_subparsers(dest="cfg_subcommand")
 
     # configure (no subcommand) = workspace config
-    cfg_p.add_argument("--latest", default=None)
-    cfg_p.add_argument("--include", nargs="*", default=[])
-    cfg_p.add_argument("--exclude", nargs="*", default=[])
-    cfg_p.add_argument("--remove", nargs="*", default=[])
-    cfg_p.add_argument("--clear", action="store_true")
+    cfg_p.add_argument(
+        "--latest",
+        default=None,
+        help="Package whose GitHub release should be marked Latest.",
+    )
+    cfg_p.add_argument(
+        "--include",
+        nargs="*",
+        default=[],
+        help="Add these packages to the release-allow list.",
+    )
+    cfg_p.add_argument(
+        "--exclude",
+        nargs="*",
+        default=[],
+        help="Add these packages to the release-deny list.",
+    )
+    cfg_p.add_argument(
+        "--remove",
+        nargs="*",
+        default=[],
+        help="Remove these packages from include/exclude lists.",
+    )
+    cfg_p.add_argument(
+        "--clear",
+        action="store_true",
+        help="Clear the include/exclude lists entirely.",
+    )
 
     # configure publish
     cpub_p = cfg_sub.add_parser("publish", help="Manage publishing configuration.")
-    cpub_p.add_argument("--index", default=None)
-    cpub_p.add_argument("--environment", default=None)
-    cpub_p.add_argument("--trusted-publishing", default=None)
-    cpub_p.add_argument("--include", nargs="*", default=[])
-    cpub_p.add_argument("--exclude", nargs="*", default=[])
-    cpub_p.add_argument("--remove", nargs="*", default=[])
-    cpub_p.add_argument("--clear", action="store_true")
+    cpub_p.add_argument(
+        "--index",
+        default=None,
+        help="Name of the [tool.uv.index] entry to publish to.",
+    )
+    cpub_p.add_argument(
+        "--environment",
+        default=None,
+        help="GitHub Actions environment to gate publishing through.",
+    )
+    cpub_p.add_argument(
+        "--trusted-publishing",
+        default=None,
+        help="`automatic` (default), `always`, or `never` for PyPI trusted publishing.",
+    )
+    cpub_p.add_argument(
+        "--include",
+        nargs="*",
+        default=[],
+        help="Add these packages to the publish-allow list.",
+    )
+    cpub_p.add_argument(
+        "--exclude",
+        nargs="*",
+        default=[],
+        help="Add these packages to the publish-deny list.",
+    )
+    cpub_p.add_argument(
+        "--remove",
+        nargs="*",
+        default=[],
+        help="Remove these packages from include/exclude lists.",
+    )
+    cpub_p.add_argument(
+        "--clear",
+        action="store_true",
+        help="Clear the include/exclude lists entirely.",
+    )
 
     # configure runners
     crun_p = cfg_sub.add_parser("runners", help="Manage per-package CI runners.")
-    crun_p.add_argument("--package", default="")
-    crun_p.add_argument("--add", nargs="*", default=[])
-    crun_p.add_argument("--remove", nargs="*", default=[])
-    crun_p.add_argument("--clear", action="store_true")
+    crun_p.add_argument(
+        "--package",
+        default="",
+        help="Package whose runner labels are being modified.",
+    )
+    crun_p.add_argument(
+        "--add",
+        nargs="*",
+        default=[],
+        help="Runner labels to add for the selected package.",
+    )
+    crun_p.add_argument(
+        "--remove",
+        nargs="*",
+        default=[],
+        help="Runner labels to remove for the selected package.",
+    )
+    crun_p.add_argument(
+        "--clear",
+        action="store_true",
+        help="Clear all runner labels for the selected package.",
+    )
 
     # -- clean --
     sub.add_parser("clean", help="Remove build caches.")
 
     # -- download --
     dl_p = sub.add_parser("download", help="Download wheels from a release.")
-    dl_p.add_argument("package", nargs="?", default="")
-    dl_p.add_argument("--release-tag", default="")
-    dl_p.add_argument("--run-id", default="")
-    dl_p.add_argument("--output", default="dist")
-    dl_p.add_argument("--repo", default="")
-    dl_p.add_argument("--all-platforms", action="store_true")
+    dl_p.add_argument(
+        "package",
+        nargs="?",
+        default="",
+        help="Workspace package to download wheels for.",
+    )
+    dl_p.add_argument(
+        "--release-tag",
+        default="",
+        help="Specific release tag to pull from (default: latest).",
+    )
+    dl_p.add_argument(
+        "--run-id",
+        default="",
+        help="GitHub Actions run id to pull artifacts from instead of a release.",
+    )
+    dl_p.add_argument(
+        "--output",
+        default="dist",
+        help="Directory to write wheels into (default: dist).",
+    )
+    dl_p.add_argument(
+        "--repo",
+        default="",
+        help="GitHub `owner/name` to download from (default: current remote).",
+    )
+    dl_p.add_argument(
+        "--all-platforms",
+        action="store_true",
+        help="Download wheels for every platform, not just this one.",
+    )
 
     # -- install --
     inst_p = sub.add_parser("install", help="Install packages from wheels.")
-    inst_p.add_argument("packages", nargs="*", default=[])
-    inst_p.add_argument("--dist", default="")
-    inst_p.add_argument("--repo", default="")
+    inst_p.add_argument(
+        "packages",
+        nargs="*",
+        default=[],
+        help="Workspace packages to install.",
+    )
+    inst_p.add_argument(
+        "--dist",
+        default="",
+        help="Directory of pre-downloaded wheels to install from.",
+    )
+    inst_p.add_argument(
+        "--repo",
+        default="",
+        help="GitHub `owner/name` to download wheels from (default: current remote).",
+    )
 
     # -- workflow --
     wf_p = sub.add_parser("workflow", help="Manage release workflow.")
     wf_sub = wf_p.add_subparsers(dest="wf_subcommand")
     wf_val = wf_sub.add_parser("validate", help="Validate workflow against template.")
-    wf_val.add_argument("--workflow-dir", default=".github/workflows")
-    wf_val.add_argument("--diff", action="store_true", dest="show_diff")
+    wf_val.add_argument(
+        "--workflow-dir",
+        default=".github/workflows",
+        help="Directory holding the release workflow (default: .github/workflows).",
+    )
+    wf_val.add_argument(
+        "--diff",
+        action="store_true",
+        dest="show_diff",
+        help="Print a unified diff against the bundled template.",
+    )
     wf_inst = wf_sub.add_parser("install", help="Install or upgrade the workflow.")
-    wf_inst.add_argument("--force", action="store_true")
-    wf_inst.add_argument("--upgrade", action="store_true")
-    wf_inst.add_argument("--workflow-dir", default=".github/workflows")
-    wf_inst.add_argument("--editor", default="")
-    # Hidden flag: print the bundled template to stdout and exit. Used by
+    wf_inst.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite an existing workflow without prompting.",
+    )
+    wf_inst.add_argument(
+        "--upgrade",
+        action="store_true",
+        help="Three-way merge the bundled template into the existing workflow.",
+    )
+    wf_inst.add_argument(
+        "--workflow-dir",
+        default=".github/workflows",
+        help="Directory to install into (default: .github/workflows).",
+    )
+    wf_inst.add_argument(
+        "--editor",
+        default="",
+        help="Editor to launch for resolving merge conflicts during --upgrade.",
+    )
+    # Hidden: print the bundled template to stdout and exit. Used by
     # --upgrade via `uvx --with uv-release=={prev} uvr workflow install
     # --print-template` to fetch the base for three-way merge.
-    wf_inst.add_argument("--print-template", action="store_true")
+    wf_inst.add_argument(
+        "--print-template",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
 
     # -- skill --
     sk_p = sub.add_parser("skill", help="Manage Claude Code skills.")
     sk_sub = sk_p.add_subparsers(dest="sk_subcommand")
     sk_inst = sk_sub.add_parser("install", help="Install or upgrade skill files.")
-    sk_inst.add_argument("--force", action="store_true")
-    sk_inst.add_argument("--upgrade", action="store_true")
-    sk_inst.add_argument("--editor", default="")
-    # Hidden flag: print the bundled templates to stdout (concatenated with
-    # path markers) and exit. Used by --upgrade via uvx to fetch base content.
-    sk_inst.add_argument("--print-template", action="store_true")
+    sk_inst.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing skill files without prompting.",
+    )
+    sk_inst.add_argument(
+        "--upgrade",
+        action="store_true",
+        help="Three-way merge the bundled skills into the existing copies.",
+    )
+    sk_inst.add_argument(
+        "--editor",
+        default="",
+        help="Editor to launch for resolving merge conflicts during --upgrade.",
+    )
+    # Hidden: print the bundled templates to stdout (concatenated with path
+    # markers) and exit. Used by --upgrade via uvx to fetch base content.
+    sk_inst.add_argument(
+        "--print-template",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
 
-    # -- jobs (CI-only, hidden) --
-    jobs_p = sub.add_parser("jobs", help="Execute a job from a plan (CI).")
-    jobs_p.add_argument("job_name", nargs="?", default="")
+    # -- jobs (CI-only) --
+    jobs_p = sub.add_parser(
+        "jobs",
+        help="Execute a single job from a serialized plan (CI use).",
+    )
+    jobs_p.add_argument(
+        "job_name",
+        nargs="?",
+        default="",
+        help="Name of the job to execute. Plan is read from $UVR_PLAN.",
+    )
 
     # -- ui-demo (visual showcase of the design system) --
-    sub.add_parser("ui-demo", help="Render every uv_release.ui primitive.")
+    sub.add_parser(
+        "ui-demo",
+        help="Render every uv_release.ui primitive for visual verification.",
+    )
 
     ns = parser.parse_args()
     return ParsedArgs(values=vars(ns), command=ns.command or "")

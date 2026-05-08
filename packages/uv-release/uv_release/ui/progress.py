@@ -64,16 +64,19 @@ class _SmallElapsedColumn(ProgressColumn):
     """
 
     def render(self, task: Task) -> Text:
+        # Elapsed time is content the user reads (`9ms`, `57us`), not
+        # chrome — render in default fg. ASCII `us` instead of unicode `µs`
+        # so the column is screenshot/CI-log safe.
         elapsed = task.finished_time if task.finished else task.elapsed
         if elapsed is None:
-            return Text("--", style="uvr.dim")
+            return Text("--")
         if elapsed < 1e-3:
-            label = f"{elapsed * 1e6:.0f}µs"
+            label = f"{elapsed * 1e6:.0f}us"
         elif elapsed < 1:
             label = f"{elapsed * 1e3:.0f}ms"
         else:
             label = f"{elapsed:.1f}s"
-        return Text(label, style="uvr.dim")
+        return Text(label)
 
 
 @contextmanager

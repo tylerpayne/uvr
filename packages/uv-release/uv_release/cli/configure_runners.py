@@ -21,7 +21,7 @@ def cmd_configure_runners(runners: UvrRunners, job: ConfigureRunnersJob) -> None
         ui.section("Runners ([tool.uvr.runners])")
         for pkg, runner_list in sorted(runners.items.items()):
             for labels in runner_list:
-                ui.console.print(f"  [uvr.accent]{pkg}[/]: [{', '.join(labels)}]")
+                ui.console.print(f"  [uvr.value]{pkg}[/]: [{', '.join(labels)}]")
         return
 
     execute_job(job)

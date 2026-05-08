@@ -66,11 +66,14 @@ def cmd_release(
         baseline = baseline_tags.items.get(name)
         rows.append(
             [
-                f"[uvr.accent]{name}[/]",
-                pkg.version.raw,
-                f"[b]{rel_ver.raw}[/]",
-                next_ver.raw if next_ver else "",
-                baseline.raw if baseline else "(initial)",
+                # Package name and every version/tag here are refs ("things
+                # the system tracks") — cyan. The release version stays bold
+                # on top of cyan so the new value still draws the eye.
+                f"[uvr.value]{name}[/]",
+                f"[uvr.value]{pkg.version.raw}[/]",
+                f"[b uvr.value]{rel_ver.raw}[/]",
+                f"[uvr.value]{next_ver.raw}[/]" if next_ver else "",
+                f"[uvr.value]{baseline.raw}[/]" if baseline else "(initial)",
             ]
         )
     ui.print_table(["package", "current", "release", "next", "diff from"], rows)
@@ -83,7 +86,7 @@ def cmd_release(
         ui.console.print()
         ui.section("Release notes")
         for name, notes in sorted(release_notes.items.items()):
-            ui.console.print(f"  [uvr.accent]{name}[/]:")
+            ui.console.print(f"  [uvr.value]{name}[/]:")
             for line in notes.splitlines()[:5]:
                 ui.console.print(f"    {line}")
 
@@ -160,7 +163,7 @@ def _print_job_detail(job: Job, plan: Plan) -> None:
                 ui.console.print("      [uvr.dim]targets:[/]")
                 for t in targets:
                     name = t.label.removeprefix("Build ")
-                    ui.console.print(f"        [uvr.accent]{name}[/]")
+                    ui.console.print(f"        [uvr.value]{name}[/]")
             if build_deps or downloaded_deps:
                 ui.console.print("      [uvr.dim]deps:[/]")
                 for b in build_deps:
@@ -171,8 +174,8 @@ def _print_job_detail(job: Job, plan: Plan) -> None:
     elif job.name == "release":
         releases = [c for c in job.commands if isinstance(c, CreateReleaseCommand)]
         for rel in releases:
-            ui.console.print(f"    [uvr.accent]{rel.title}[/]")
+            ui.console.print(f"    [uvr.value]{rel.title}[/]")
     elif job.name == "publish":
         publishes = [c for c in job.commands if isinstance(c, PublishToIndexCommand)]
         for pub in publishes:
-            ui.console.print(f"    [uvr.accent]{pub.package_name}[/]")
+            ui.console.print(f"    [uvr.value]{pub.package_name}[/]")

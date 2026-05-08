@@ -47,9 +47,6 @@ def _render_help(parser: argparse.ArgumentParser) -> None:
     if is_root:
         ui.banner(_version())
         ui.console.print()
-        if parser.description:
-            ui.console.print(parser.description)
-            ui.console.print()
     else:
         # Subcommand help: print the canonical argparse usage line so
         # users still see the exact `uvr release [-h] [--where ...]` form.
@@ -64,9 +61,10 @@ def _render_help(parser: argparse.ArgumentParser) -> None:
     sub = _find_subparsers(parser)
     if sub is not None:
         ui.section("Commands")
+        # Command and flag listings render plain — the dim header above and
+        # the table layout already establish "this is the inventory."
         rows: list[list[str]] = [
-            [f"[uvr.cmd]{name}[/]", help_text or ""]
-            for name, help_text in _subcommands(sub)
+            [name, help_text or ""] for name, help_text in _subcommands(sub)
         ]
         ui.print_table(["command", "description"], rows)
         ui.console.print()
@@ -74,7 +72,7 @@ def _render_help(parser: argparse.ArgumentParser) -> None:
     options = _options(parser)
     if options:
         ui.section("Options")
-        rows = [[f"[uvr.cmd]{flags}[/]", help_text] for flags, help_text in options]
+        rows = [[flags, help_text] for flags, help_text in options]
         ui.print_table(["flag", "description"], rows)
         ui.console.print()
 
@@ -102,12 +100,18 @@ def _subcommands(
 
 
 def _options(parser: argparse.ArgumentParser) -> list[tuple[str, str]]:
-    """All flag-style actions on the parser (skipping subcommands)."""
+    """All flag-style actions on the parser (skipping subcommands).
+
+    Actions whose help is `argparse.SUPPRESS` are hidden — that's the
+    convention for CI-internal flags (`--plan`, `--print-template`).
+    """
     out: list[tuple[str, str]] = []
     for action in parser._actions:
         if isinstance(action, argparse._SubParsersAction):
             continue
         if not action.option_strings:
+            continue
+        if action.help is argparse.SUPPRESS:
             continue
         flags = ", ".join(action.option_strings)
         # Append the metavar/choices so the flag column shows e.g.
@@ -126,9 +130,7 @@ _INVALID_CHOICE_RE = re.compile(
 )
 
 
-def _humanize_argparse_error(
-    parser: argparse.ArgumentParser, message: str
-) -> str:
+def _humanize_argparse_error(parser: argparse.ArgumentParser, message: str) -> str:
     """Rewrite argparse's raw error string into a one-line user-facing summary.
 
     Falls back to the raw message when we don't recognize the shape.

@@ -29,9 +29,10 @@ def spinner(label: str, subtitle: str | None = None) -> Iterator[Status]:
     """Run an indeterminate spinner. Auto-clears on context exit.
 
     Yields the underlying `Status` so callers can swap the label live via
-    `s.update("...")` as the work progresses through phases.
+    `s.update("...")` as the work progresses through phases. Both label
+    and subtitle render in default fg — content the user reads, not chrome.
     """
-    text = label if subtitle is None else f"{label}     [uvr.dim]{subtitle}[/]"
+    text = label if subtitle is None else f"{label}     {subtitle}"
     status = console.status(text, spinner="uvr", spinner_style="uvr.accent")
     with status:
         yield status
@@ -40,11 +41,13 @@ def spinner(label: str, subtitle: str | None = None) -> Iterator[Status]:
 def spinner_done(label: str, elapsed_ms: float | None = None) -> None:
     """Print the post-spinner completion line.
 
-    Convention: green check, label in fg, elapsed in dim. Call this right
-    after the `with spinner(...)` block exits so the line takes the place
-    of the cleared spinner.
+    Convention: green `[ok]` token, label and elapsed in default fg. Call
+    this right after the `with spinner(...)` block exits so the line takes
+    the place of the cleared spinner. ASCII `[ok]` (not unicode `✓`) so
+    the line survives screenshots, CI logs, and pasted README blocks.
     """
+    # Escape the brackets so Rich markup doesn't try to parse `[ok]` as a tag.
     if elapsed_ms is None:
-        console.print(f"[uvr.ok]✓[/] {label}")
-    else:
-        console.print(f"[uvr.ok]✓[/] {label}  [uvr.dim]{elapsed_ms:.0f}ms[/]")
+        console.print(rf"[uvr.ok]\[ok][/] {label}")
+        return
+    console.print(rf"[uvr.ok]\[ok][/] {label}  {elapsed_ms:.0f}ms")

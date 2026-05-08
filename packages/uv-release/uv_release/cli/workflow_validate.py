@@ -57,7 +57,7 @@ def cmd_workflow_validate(
         for w in warnings:
             ui.console.print(f"  [uvr.changed]-[/] {w}")
     if not errors and not warnings:
-        ui.console.print("[uvr.ok]✓[/] Workflow is valid.")
+        ui.console.print(r"[uvr.ok]\[ok][/] Workflow is valid.")
 
     if params.show_diff and template.content:
         diff = difflib.unified_diff(

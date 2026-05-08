@@ -24,7 +24,7 @@ def cmd_version(
         ui.console.print()
         ui.section("Packages")
         rows = [
-            [f"[uvr.accent]{name}[/]", pkg.version.raw]
+            [f"[uvr.value]{name}[/]", pkg.version.raw]
             for name, pkg in sorted(workspace.items.items())
         ]
         ui.print_table(["package", "version"], rows)
