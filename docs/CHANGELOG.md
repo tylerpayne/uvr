@@ -6,9 +6,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [uv-release v0.35.0] - 2026-05-09
+
+### Added
+- New `uv_release.ui` module: a small vocabulary of primitives — section headers, ASCII progress bars, no-box tables, status badges, confirm prompts, two-level pipelines, error blocks with copy-paste fix sections, key/value pairs, hints, banner, ASCII spinner. Every command imports from this layer instead of touching Rich directly.
+- `uvr ui-demo` renders every primitive plus the full `uvr release` composition for visual verification.
+- Custom argparse renderer: `uvr --help` and every subcommand help use the design grammar. Internal CI flags (`--plan`, `--print-template`) hidden via `argparse.SUPPRESS`. Every option flag has a real help string.
+
+### Changed
+- The whole CLI now speaks the design grammar: `status`, `release`, `version`, `build`, `configure`, `workflow validate`, every `Command.execute()` label.
+- Color language is six semantic tokens: magenta (brand / things you type), green (success), yellow ("look here, nothing broken"), red (error), cyan (refs — package names, tags, baselines, version strings), dim (chrome only). Default fg is the workhorse for everything else.
+- `SetVersionCommand` prints a branded diff line (`Updated <pkg> v<old> -> v<new>`) instead of a generic label.
+- Argparse errors humanized: `error: Unknown command 'foo' for \`uvr\`.` instead of `argument <internal-dest>: invalid choice ...`.
+- Confirm prompts read `Apply fix? (y/N): ` — capital marks the default, only the `(y/N)` token is brand-colored.
+- Bump commit messages now reflect the actual CLI intent. `--bump stable` → `chore: set release versions`; `--bump minor` → `chore: bump minor versions`; `--set X` → `chore: set versions`.
+- `DIFF FROM` resolution prefers the dev0 baseline tag for clean stable versions. After strip-dev, `0.34.2` correctly diffs from `v0.34.2.dev0-base` (the cycle anchor) instead of skipping back to the previous release.
+- Strip-dev fix simplified to a single literal shell command: `uvr version --bump stable`. The Fix block shows exactly what runs.
+
 ### Fixed
 - Fix `ModuleNotFoundError: No module named 'yaml'` on every `uvr` invocation by declaring `pyyaml` as a runtime dependency (#20)
-- Fix post-release bump pipeline. Baseline (`-base`) tags are now annotated so `git push --follow-tags` actually pushes them. `uv.lock` regeneration uses `uv lock` (lockfile-only) and aborts the bump on failure instead of silently committing pyproject.toml changes without the matching lock. `git pull --rebase` runs before tagging so tag refs cannot be orphaned by a rebase.
+- Post-release bump commit now includes `uv.lock`. The lockfile sync step uses `uv lock` (not `uv sync`) and aborts loudly on failure instead of silently shipping a bump commit out of sync with `pyproject.toml`.
+- Baseline `-base` tags are annotated, so `git push --follow-tags` actually pushes them.
+- `git pull --rebase` runs before tagging in the bump job, not after — orphaned tag refs from a rebased commit can no longer happen.
+
+### Internal
+- All `# type: ignore[arg-type]` / `[no-untyped-def]` suppressions removed (34 of them). `uv run poe check` reports zero diagnostics.
 
 ## [uv-release v0.34.0] - 2026-05-06
 
