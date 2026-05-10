@@ -73,9 +73,9 @@ def _find_baseline_tag(name: str, version: Version, repo: GitRepo) -> Tag | None
         # `0.34.2a0.dev0-base`, not `0.34.2.dev0-base`.
         dev0 = version.with_dev(0)
         tag_name = Tag.baseline_tag_name(name, dev0)
-        return repo.resolve_tag(
-            name, tag_name, is_baseline=True
-        ) or _previous_release(name, version, repo)
+        return repo.resolve_tag(name, tag_name, is_baseline=True) or _previous_release(
+            name, version, repo
+        )
 
     # Post-release: diff against the base stable release.
     if state in (VersionState.CLEAN_POST0, VersionState.CLEAN_POSTM):
