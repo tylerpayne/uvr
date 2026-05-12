@@ -102,9 +102,7 @@ class TestSkillUpgrade:
         with patch("subprocess.run", side_effect=_mock):
             with pytest.raises(SystemExit):
                 with diny.provide():
-                    run_cli(
-                        "skill", "install", "--upgrade", "--from-version", "0.34.1"
-                    )
+                    run_cli("skill", "install", "--upgrade", "--from-version", "0.34.1")
 
         out = capsys.readouterr().out
         # --from-version wins over both the recorded value and the fallback.
