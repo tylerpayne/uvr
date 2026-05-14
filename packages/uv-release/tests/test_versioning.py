@@ -284,7 +284,80 @@ class TestComputeBumpedVersion:
 
 
 class TestComputeDependencyPins:
-    def test_pins_internal_dep(self) -> None:
+    def test_pins_internal_dep_when_specifier_broken(self) -> None:
+        # Existing pin `<2.0.0` rejects the new 2.0.0 -> pin emitted.
+        versions = {"pkg-a": Version.parse("2.0.0")}
+        packages = {
+            "pkg-a": Package(
+                name="pkg-a", path="packages/pkg-a", version=Version.parse("2.0.0")
+            ),
+            "pkg-b": Package(
+                name="pkg-b",
+                path="packages/pkg-b",
+                version=Version.parse("1.0.0"),
+                dependencies=[_d("pkg-a<2.0.0")],
+            ),
+        }
+        pins = compute_dependency_pins(versions, packages)
+        assert len(pins) == 1
+        assert pins[0].package_path == "packages/pkg-b"
+        assert pins[0].pins["pkg-a"] == "pkg-a>=2.0.0,<2.1.0"
+
+    def test_no_pin_when_existing_specifier_satisfies_new_version(self) -> None:
+        # Existing range already accepts the new version -> no rewrite.
+        versions = {"pkg-a": Version.parse("1.5.0")}
+        packages = {
+            "pkg-a": Package(
+                name="pkg-a", path="packages/pkg-a", version=Version.parse("1.5.0")
+            ),
+            "pkg-b": Package(
+                name="pkg-b",
+                path="packages/pkg-b",
+                version=Version.parse("1.0.0"),
+                dependencies=[_d("pkg-a>=1.0.0,<2.0.0")],
+            ),
+        }
+        pins = compute_dependency_pins(versions, packages)
+        assert len(pins) == 0
+
+    def test_no_pin_for_patch_within_existing_range(self) -> None:
+        # Patch bump 1.2.0 -> 1.2.1 inside `>=1.2.0,<1.3.0` is a no-op.
+        # This is the case that previously triggered an unnecessary cascade.
+        versions = {"pkg-a": Version.parse("1.2.1")}
+        packages = {
+            "pkg-a": Package(
+                name="pkg-a", path="packages/pkg-a", version=Version.parse("1.2.1")
+            ),
+            "pkg-b": Package(
+                name="pkg-b",
+                path="packages/pkg-b",
+                version=Version.parse("1.0.0"),
+                dependencies=[_d("pkg-a>=1.2.0,<1.3.0")],
+            ),
+        }
+        pins = compute_dependency_pins(versions, packages)
+        assert len(pins) == 0
+
+    def test_pin_emitted_when_minor_breaks_existing_range(self) -> None:
+        # Minor bump 1.2.0 -> 1.3.0 falls outside `<1.3.0` and so emits.
+        versions = {"pkg-a": Version.parse("1.3.0")}
+        packages = {
+            "pkg-a": Package(
+                name="pkg-a", path="packages/pkg-a", version=Version.parse("1.3.0")
+            ),
+            "pkg-b": Package(
+                name="pkg-b",
+                path="packages/pkg-b",
+                version=Version.parse("1.0.0"),
+                dependencies=[_d("pkg-a>=1.2.0,<1.3.0")],
+            ),
+        }
+        pins = compute_dependency_pins(versions, packages)
+        assert len(pins) == 1
+        assert pins[0].pins["pkg-a"] == "pkg-a>=1.3.0,<1.4.0"
+
+    def test_no_pin_when_dep_has_no_specifier(self) -> None:
+        # A bare dep accepts any version; nothing to rewrite.
         versions = {"pkg-a": Version.parse("2.0.0")}
         packages = {
             "pkg-a": Package(
@@ -298,12 +371,14 @@ class TestComputeDependencyPins:
             ),
         }
         pins = compute_dependency_pins(versions, packages)
-        assert len(pins) == 1
-        assert pins[0].package_path == "packages/pkg-b"
-        assert "pkg-a>=2.0.0" in pins[0].pins["pkg-a"]
+        assert len(pins) == 0
 
-    def test_dev_versions_not_pinned(self) -> None:
-        """Dev versions are skipped because they are not installable from PyPI."""
+    def test_dev_version_pins_via_stripped_form(self) -> None:
+        """A bumped dev version pins to its stripped-dev form, not the raw
+        dev string. The `uvr version --bump minor` flow produces a dev
+        target (e.g. 2.0.0.dev0) that the user expects to release as
+        2.0.0; the pin must reference 2.0.0 so consumers can install
+        once the release lands."""
         versions = {"pkg-a": Version.parse("2.0.0.dev0")}
         packages = {
             "pkg-a": Package(
@@ -313,7 +388,26 @@ class TestComputeDependencyPins:
                 name="pkg-b",
                 path="packages/pkg-b",
                 version=Version.parse("1.0.0"),
-                dependencies=[_d("pkg-a")],
+                dependencies=[_d("pkg-a<2.0.0")],
+            ),
+        }
+        pins = compute_dependency_pins(versions, packages)
+        assert len(pins) == 1
+        assert pins[0].pins["pkg-a"] == "pkg-a>=2.0.0,<2.1.0"
+
+    def test_dev_bump_within_range_is_noop(self) -> None:
+        """A dev bump that stays within the existing pin range emits no
+        pin (the stripped-dev form already satisfies)."""
+        versions = {"pkg-a": Version.parse("1.0.0.dev1")}
+        packages = {
+            "pkg-a": Package(
+                name="pkg-a", path="packages/pkg-a", version=Version.parse("1.0.0.dev1")
+            ),
+            "pkg-b": Package(
+                name="pkg-b",
+                path="packages/pkg-b",
+                version=Version.parse("1.0.0"),
+                dependencies=[_d("pkg-a>=1.0.0,<2.0.0")],
             ),
         }
         pins = compute_dependency_pins(versions, packages)
@@ -329,7 +423,7 @@ class TestComputeDependencyPins:
                 name="pkg-b",
                 path="packages/pkg-b",
                 version=Version.parse("1.0.0"),
-                dependencies=[_d("requests")],
+                dependencies=[_d("requests<3.0.0")],
             ),
         }
         pins = compute_dependency_pins(versions, packages)
@@ -345,7 +439,7 @@ class TestComputeDependencyPins:
                 name="pkg-b",
                 path="packages/pkg-b",
                 version=Version.parse("1.0.0"),
-                dependencies=[_d("pkg-c")],
+                dependencies=[_d("pkg-c<2.0.0")],
             ),
         }
         pins = compute_dependency_pins(versions, packages)
@@ -362,7 +456,7 @@ class TestComputeDependencyPins:
                 name="pkg-b",
                 path="packages/pkg-b",
                 version=Version.parse("1.0.0"),
-                build_dependencies=[_d("pkg-a")],
+                build_dependencies=[_d("pkg-a<2.0.0")],
             ),
         }
         pins = compute_dependency_pins(versions, packages)
@@ -380,8 +474,8 @@ class TestComputeDependencyPins:
                 name="pkg-b",
                 path="packages/pkg-b",
                 version=Version.parse("1.0.0"),
-                dependencies=[_d("pkg-a")],
-                build_dependencies=[_d("pkg-a")],
+                dependencies=[_d("pkg-a<2.0.0")],
+                build_dependencies=[_d("pkg-a<2.0.0")],
             ),
         }
         pins = compute_dependency_pins(versions, packages)

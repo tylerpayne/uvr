@@ -171,30 +171,47 @@ def compute_dependency_pins(
 ) -> list[Pin]:
     """Compute dependency pins for packages whose deps are being bumped.
 
-    For each package in all_packages, if any of its internal deps (runtime
-    or build-system) are in new_versions, generate a Pin with the new
-    version range. Build-system.requires entries are pinned too so a
-    workspace package that build-depends on a sibling stays consistent
-    across the release. Dev versions are skipped because they are not
-    installable from PyPI without --pre.
+    A pin is emitted only when the dependent's existing specifier does NOT
+    already accept the new version's stripped-dev form. This is the gate
+    that prevents a patch bump (e.g. 1.2.0 -> 1.2.1) from rewriting every
+    dependent's pyproject just to tighten its lower bound. A minor or
+    major bump that lands outside the existing range emits a pin and so
+    triggers a file change that change detection will pick up in the
+    same release cycle.
+
+    The lower bound is the stripped-dev form (compute_release_version),
+    not the raw version. The user-driven `uvr version --bump minor` flow
+    produces X.Y.0.dev0; the pin must reference X.Y.0 (the eventual
+    release) so consumers can install once the release lands. The bump
+    and release are expected to be coordinated in one cycle, so the dev
+    intermediary never goes to PyPI alone.
+
+    Build-system.requires entries are pinned the same way so a workspace
+    package that build-depends on a sibling stays consistent.
     """
-    bumped_names = set(new_versions.keys())
     pins: list[Pin] = []
 
     for pkg in all_packages.values():
         pkg_pins: dict[str, str] = {}
-        # all_dep_names covers both [project].dependencies and
-        # [build-system].requires. Duplicates between the two lists
-        # collapse naturally because pkg_pins is a dict keyed by name.
-        for dep in pkg.all_dep_names:
-            if dep in bumped_names:
-                nv = new_versions[dep]
-                # Never pin to dev versions. They are not installable from PyPI.
-                if nv.is_dev:
-                    continue
-                lower = nv.raw
-                upper = f"{nv.major}.{nv.minor + 1}.0"
-                pkg_pins[dep] = f"{dep}>={lower},<{upper}"
+        # Iterate Dependency objects (not just names) so we can consult
+        # the existing specifier. Runtime and build entries share one
+        # dict keyed by name, so a dep listed in both collapses to a
+        # single entry.
+        for dep in (*pkg.dependencies, *pkg.build_dependencies):
+            if dep.name not in new_versions:
+                continue
+            # Use the eventual release form (strip dev). The pin will
+            # only become installable once the release happens, but
+            # bump and release are coordinated in one cycle.
+            nv = compute_release_version(new_versions[dep.name])
+            # If the existing specifier already accepts the new version,
+            # the pyproject does not need to move and the dependent stays
+            # clean for change detection.
+            if dep.satisfied_by(nv.raw):
+                continue
+            lower = nv.raw
+            upper = f"{nv.major}.{nv.minor + 1}.0"
+            pkg_pins[dep.name] = f"{dep.name}>={lower},<{upper}"
         if pkg_pins:
             pins.append(Pin(package_path=pkg.path, pins=pkg_pins))
 

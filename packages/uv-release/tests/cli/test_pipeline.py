@@ -372,13 +372,13 @@ class TestChangeDetection:
     def test_dep_propagation(
         self, released_workspace: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
-        """pkg-c depends on pkg-b. If pkg-b changed, pkg-c should too."""
+        """pkg-c is dirty because it is an initial release, not because pkg-b
+        depends on it. Change detection is purely file-based now."""
         with diny.provide():
             run_cli("status")
         out = capsys.readouterr().out
         assert "pkg-c" in out
-        # pkg-c changes because pkg-b changed (dependency propagation)
-        # or because it's an initial release. Either way, it's dirty.
+        assert "initial release" in out
 
     def test_no_changes_after_full_tag(
         self, workspace: Path, capsys: pytest.CaptureFixture[str]
@@ -406,8 +406,67 @@ class TestChangeDetection:
             run_cli("status")
         out = capsys.readouterr().out
         assert "pkg-a" in out and "files changed" in out
-        # pkg-b depends on pkg-a, should propagate.
-        assert "pkg-b" in out and "dependency changed" in out
+        # pkg-b depends on pkg-a with `pkg-a>=0.1.0`, which is satisfied by
+        # the stripped-dev release version 0.1.0. No cascade. To re-release
+        # pkg-b alongside pkg-a, run `uvr version --bump minor` first.
+        assert "dependency changed" not in out
+        # pkg-b should not appear as a changed row.
+        pkg_b_lines = [line for line in out.splitlines() if "pkg-b" in line]
+        for line in pkg_b_lines:
+            assert "files changed" not in line and "dependency changed" not in line
+
+    def test_minor_bump_cascades_via_pin_rewrite(
+        self, workspace: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """End-to-end: `uvr version --bump minor` on a package whose new
+        version falls outside a dependent's existing pin rewrites the
+        dependent's pyproject. Both packages then show as changed in
+        `uvr status`, so the next release cycle picks up both in one go.
+        This is the file-driven cascade that replaces the old reverse-dep
+        propagation."""
+        from conftest import tag_all
+
+        pkg_b_pyproject = workspace / "packages" / "pkg-b" / "pyproject.toml"
+        # Tighten pkg-b's pin to an upper bound that a minor bump will break.
+        pkg_b_pyproject.write_text(
+            pkg_b_pyproject.read_text().replace(
+                '"pkg-a>=0.1.0"', '"pkg-a>=0.1.0,<0.2.0"'
+            )
+        )
+        git(workspace, "add", ".")
+        git(workspace, "commit", "-m", "tighten pkg-b pin")
+        tag_all(workspace)
+
+        with diny.provide():
+            run_cli(
+                "version",
+                "--bump",
+                "minor",
+                "--packages",
+                "pkg-a",
+                "--no-commit",
+                "--no-push",
+            )
+
+        pkg_a = read_toml(workspace / "packages" / "pkg-a" / "pyproject.toml")
+        pkg_b = read_toml(pkg_b_pyproject)
+        assert pkg_a["project"]["version"] == "0.2.0.dev0"
+        # pkg-a moved past `<0.2.0`, so pkg-b's pin was rewritten to the
+        # new minor range.
+        assert pkg_b["project"]["dependencies"] == ["pkg-a>=0.2.0,<0.3.0"]
+
+        # status now sees both pyprojects as moved since baseline.
+        git(workspace, "add", ".")
+        git(workspace, "commit", "-m", "bump pkg-a minor")
+        # Discard captured bump output before invoking status.
+        capsys.readouterr()
+        with diny.provide():
+            run_cli("status")
+        out = capsys.readouterr().out
+        pkg_a_line = next(line for line in out.splitlines() if "pkg-a" in line)
+        pkg_b_line = next(line for line in out.splitlines() if "pkg-b" in line)
+        assert "files changed" in pkg_a_line
+        assert "files changed" in pkg_b_line
 
 
 class TestJobsSubcommand:

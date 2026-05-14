@@ -21,6 +21,7 @@
 * [0015 - Allow Dev Release From Clean Versions](0015-allow-dev-release-from-clean-versions.md)
 * [0016 - Inject State Dependencies Into Intents](0016-inject-state-dependencies-into-intents.md)
 * [0017 - Unify Version Management Under Single Command](0017-unify-version-management-under-single-command.md)
+* [0018 - Replace Cascade Detection With Conditional Pin Updates](0018-replace-cascade-detection-with-conditional-pin-updates.md)
 
 ## Rejected Records
 

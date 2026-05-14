@@ -249,14 +249,18 @@ def build_requires_workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
     )
 
     _make_package(root, "pkg-a", "1.0.1.dev0", [])
-    _make_package(root, "pkg-b", "0.1.0.dev0", ["pkg-a>=1.0.0"])
+    _make_package(root, "pkg-b", "0.1.0.dev0", ["pkg-a>=1.0.0,<1.1.0"])
     # pkg-c has pkg-d in build-system.requires AND pkg-a as a released build dep.
     _make_package(
         root,
         "pkg-c",
         "0.1.0.dev0",
-        ["pkg-b>=0.1.0"],
-        build_requires=["hatchling", "pkg-d>=0.1.0", "pkg-a>=1.0.0"],
+        ["pkg-b>=0.1.0,<0.2.0"],
+        build_requires=[
+            "hatchling",
+            "pkg-d>=0.1.0,<0.2.0",
+            "pkg-a>=1.0.0,<1.1.0",
+        ],
     )
     _make_package(root, "pkg-d", "0.1.0.dev0", [])
     _add_workflow(root)
