@@ -88,8 +88,11 @@ def cmd_release(
         ui.section("Release notes")
         for name, notes in sorted(release_notes.items.items()):
             ui.console.print(f"  [uvr.value]{name}[/]:")
+            # markup=False so bracketed strings in the notes (e.g.
+            # `[build-system].requires`, `[project.dependencies]`) render
+            # literally instead of being parsed as Rich style tags.
             for line in notes.splitlines()[:5]:
-                ui.console.print(f"    {line}")
+                ui.console.print(f"    {line}", markup=False)
 
     if params.dry_run:
         return
